@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "969714899472",
+    "project_id": "ani-max-dev",
+    "storage_bucket": "ani-max-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:969714899472:android:040845ae200e20e5b78895",
+        "android_client_info": {
+          "package_name": "com.mycompany.animax"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDdp1vx1wEOlAAYL5n07yApVtos5ThxHN4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
