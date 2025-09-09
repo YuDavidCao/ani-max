@@ -125,6 +125,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: PetInfoWidget.routeName,
           path: PetInfoWidget.routePath,
           builder: (context, params) => PetInfoWidget(),
+        ),
+        FFRoute(
+          name: HealthMetricsWidget.routeName,
+          path: HealthMetricsWidget.routePath,
+          builder: (context, params) => HealthMetricsWidget(),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

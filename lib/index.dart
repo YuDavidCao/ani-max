@@ -8,3 +8,4 @@ export '/change_password_page/change_password_page_widget.dart'
 export '/change_password_no_login/change_password_no_login_widget.dart'
     show ChangePasswordNoLoginWidget;
 export '/pet_info/pet_info_widget.dart' show PetInfoWidget;
+export '/health_metrics/health_metrics_widget.dart' show HealthMetricsWidget;
