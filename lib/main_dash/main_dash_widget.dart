@@ -6,6 +6,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'dart:ui';
 import '/index.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
 import 'main_dash_model.dart';
@@ -89,6 +90,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             body: SafeArea(
               child: Column(
                 children: [
+                  // Show banner for anonymous users
+                  if (FirebaseAuth.instance.currentUser?.isAnonymous ?? false) _buildAnonymousBanner(context),
                   _buildHeader(context, mainDashPetInfoRecord),
                   Expanded(
                     child:
@@ -100,6 +103,57 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAnonymousBanner(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: FlutterFlowTheme.of(context).primary.withOpacity(0.9),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4.0,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.person_outline,
+            color: Colors.white,
+            size: 20.0,
+          ),
+          SizedBox(width: 8.0),
+          Expanded(
+            child: Text(
+              'Guest Mode - Create an account to save your pet\'s data',
+              style: FlutterFlowTheme.of(context).bodyMedium.override(
+                fontFamily: 'custom font',
+                color: Colors.white,
+                fontSize: 14.0,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => context.pushNamed(SignUpWidget.routeName),
+            child: Text(
+              'Sign Up',
+              style: FlutterFlowTheme.of(context).bodyMedium.override(
+                fontFamily: 'custom font',
+                color: Colors.white,
+                fontSize: 14.0,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -162,6 +216,13 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                       .withOpacity(0.3),
                   indent: 20.0,
                   endIndent: 20.0,
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.delete_forever,
+                  title: 'Delete Account',
+                  textColor: FlutterFlowTheme.of(context).error,
+                  onTap: () => _showDeleteAccountDialog(context),
                 ),
                 _buildDrawerItem(
                   context,
@@ -623,5 +684,166 @@ class _MainDashWidgetState extends State<MainDashWidget> {
         ),
       ),
     );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    final bool isAnonymous = FirebaseAuth.instance.currentUser?.isAnonymous ?? false;
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Delete Account',
+            style: FlutterFlowTheme.of(context).headlineSmall.override(
+              fontFamily: 'custom font',
+              fontWeight: FontWeight.w600,
+              color: FlutterFlowTheme.of(context).error,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isAnonymous 
+                  ? 'This will permanently delete your guest account and all pet data.'
+                  : 'This will permanently delete your account and all pet data.',
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                  fontFamily: 'custom font',
+                ),
+              ),
+              SizedBox(height: 16.0),
+              Container(
+                padding: EdgeInsets.all(12.0),
+                decoration: BoxDecoration(
+                  color: FlutterFlowTheme.of(context).error.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8.0),
+                  border: Border.all(
+                    color: FlutterFlowTheme.of(context).error.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning,
+                      color: FlutterFlowTheme.of(context).error,
+                      size: 20.0,
+                    ),
+                    SizedBox(width: 8.0),
+                    Expanded(
+                      child: Text(
+                        'This action cannot be undone!',
+                        style: FlutterFlowTheme.of(context).bodySmall.override(
+                          fontFamily: 'custom font',
+                          color: FlutterFlowTheme.of(context).error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                  fontFamily: 'custom font',
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                ),
+              ),
+            ),
+            FFButtonWidget(
+              onPressed: () async {
+                Navigator.of(context).pop(); // Close dialog
+                await _deleteAccount(context);
+              },
+              text: 'Delete Account',
+              options: FFButtonOptions(
+                width: 140.0,
+                height: 40.0,
+                padding: EdgeInsetsDirectional.fromSTEB(8.0, 0.0, 8.0, 0.0),
+                color: FlutterFlowTheme.of(context).error,
+                textStyle: FlutterFlowTheme.of(context).titleSmall.override(
+                  fontFamily: 'custom font',
+                  color: Colors.white,
+                  fontSize: 14.0,
+                  fontWeight: FontWeight.w600,
+                ),
+                elevation: 2.0,
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteAccount(BuildContext context) async {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                FlutterFlowTheme.of(context).primary,
+              ),
+            ),
+            SizedBox(height: 16.0),
+            Text(
+              'Deleting account...',
+              style: FlutterFlowTheme.of(context).bodyMedium.override(
+                fontFamily: 'custom font',
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // Delete the account using the auth manager
+      await authManager.deleteUser(context);
+      
+      // Close loading dialog
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
+      
+      // Navigate to onboarding screen
+      context.goNamedAuth(OnBoardingWidget.routeName, context.mounted);
+      
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Account deleted successfully'),
+          backgroundColor: FlutterFlowTheme.of(context).primary,
+        ),
+      );
+      
+    } catch (e) {
+      // Close loading dialog
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
+      
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete account. Please try again.'),
+          backgroundColor: FlutterFlowTheme.of(context).error,
+        ),
+      );
+    }
   }
 }

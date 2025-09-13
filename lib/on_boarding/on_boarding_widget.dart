@@ -1,12 +1,12 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/auth/firebase_auth/auth_util.dart';
 import 'dart:ui';
 import '/index.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'on_boarding_model.dart';
 export 'on_boarding_model.dart';
 
@@ -230,6 +230,74 @@ class _OnBoardingWidgetState extends State<OnBoardingWidget> {
                                 ],
                               ),
                               elevation: 10.0,
+                              borderRadius: BorderRadius.circular(0.0),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16.0),
+                        // Anonymous Sign-in Button
+                        Align(
+                          alignment: AlignmentDirectional(0.0, 1.0),
+                          child: FFButtonWidget(
+                            onPressed: () async {
+                              // Show loading
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => Center(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      FlutterFlowTheme.of(context).primary,
+                                    ),
+                                  ),
+                                ),
+                              );
+
+                              try {
+                                // Sign in anonymously
+                                final user = await authManager.signInAnonymously(context);
+                                
+                                // Close loading dialog
+                                Navigator.of(context).pop();
+                                
+                                if (user != null) {
+                                  // Navigate to main dashboard
+                                  context.goNamedAuth(MainDashWidget.routeName, context.mounted);
+                                }
+                              } catch (e) {
+                                // Close loading dialog
+                                Navigator.of(context).pop();
+                                
+                                // Show error message
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to sign in. Please try again.'),
+                                    backgroundColor: FlutterFlowTheme.of(context).error,
+                                  ),
+                                );
+                              }
+                            },
+                            text: 'Continue as Guest',
+                            options: FFButtonOptions(
+                              width: MediaQuery.sizeOf(context).width * 1.0,
+                              padding: EdgeInsetsDirectional.fromSTEB(
+                                  16.0, 20.0, 16.0, 20.0),
+                              iconPadding: EdgeInsetsDirectional.fromSTEB(
+                                  0.0, 0.0, 0.0, 0.0),
+                              color: Colors.transparent,
+                              textStyle: FlutterFlowTheme.of(context)
+                                  .titleSmall
+                                  .override(
+                                fontFamily: 'Toasty Milk',
+                                color: Colors.white,
+                                letterSpacing: 0.0,
+                                fontWeight: FontWeight.normal,
+                              ),
+                              elevation: 0.0,
+                              borderSide: BorderSide(
+                                color: Colors.white,
+                                width: 2.0,
+                              ),
                               borderRadius: BorderRadius.circular(0.0),
                             ),
                           ),
