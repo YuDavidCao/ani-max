@@ -308,7 +308,19 @@ class FirebaseAuthManager extends AuthManager
     try {
       final userCredential = await signInFunc();
       if (userCredential?.user != null) {
-        await maybeCreateUser(userCredential!.user!);
+        try {
+          // Add timeout for document creation to prevent infinite loading
+          await maybeCreateUser(userCredential!.user!).timeout(
+            Duration(seconds: 10),
+            onTimeout: () {
+              print('Warning: User document creation timed out for ${authProvider} user');
+              // Continue anyway - the StreamBuilder will handle missing documents
+            },
+          );
+        } catch (e) {
+          print('Warning: Failed to create user document for ${authProvider} user: $e');
+          // Continue anyway - the StreamBuilder will handle missing documents
+        }
       }
       return userCredential == null
           ? null

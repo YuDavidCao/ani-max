@@ -43,9 +43,47 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   Widget build(BuildContext context) {
     print('currentUserReference: $currentUserReference');
     return StreamBuilder<PetInfoRecord>(
-      stream: PetInfoRecord.getDocument(currentUserReference!),
+      stream: PetInfoRecord.getDocument(currentUserReference!).timeout(
+        Duration(seconds: 15),
+        onTimeout: (sink) {
+          print('StreamBuilder timeout - creating default data for anonymous user');
+          // For anonymous users, provide default empty data on timeout
+          if (FirebaseAuth.instance.currentUser?.isAnonymous ?? false) {
+            final defaultData = PetInfoRecord.getDocumentFromData(
+              createPetInfoRecordData(
+                uid: currentUserUid,
+                displayName: 'Guest User',
+                petName: 'Your Pet',
+                petAge: 0,
+                petGender: '',
+                petHeartRate: 0,
+                petVOCPercent: 0.0,
+                petSpeed: 0.0,
+                petIsHealthy: true,
+                createdTime: getCurrentTimestamp,
+              ),
+              currentUserReference!,
+            );
+            sink.add(defaultData);
+          } else {
+            sink.addError('Failed to load pet data - request timed out');
+          }
+        },
+      ),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        // Handle error cases
+        if (snapshot.hasError) {
+          print('Error loading pet data: ${snapshot.error}');
+          // For anonymous users, create a default empty record if there's an error
+          if (FirebaseAuth.instance.currentUser?.isAnonymous ?? false) {
+            return _buildDashboardWithEmptyData(context);
+          }
+          // For regular users, show error and option to retry
+          return _buildErrorState(context, snapshot.error.toString());
+        }
+
+        // Show loading state
+        if (snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData) {
           return Scaffold(
             backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
             body: Center(
@@ -845,5 +883,128 @@ class _MainDashWidgetState extends State<MainDashWidget> {
         ),
       );
     }
+  }
+
+  Widget _buildErrorState(BuildContext context, String error) {
+    return Scaffold(
+      backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64.0,
+                color: FlutterFlowTheme.of(context).error,
+              ),
+              SizedBox(height: 16.0),
+              Text(
+                'Unable to load pet data',
+                style: FlutterFlowTheme.of(context).headlineSmall.override(
+                  fontFamily: 'custom font',
+                  color: FlutterFlowTheme.of(context).primaryText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 8.0),
+              Text(
+                'There was an issue loading your pet\'s information. Please try again.',
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                  fontFamily: 'custom font',
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24.0),
+              FFButtonWidget(
+                onPressed: () {
+                  setState(() {}); // Trigger a rebuild to retry
+                },
+                text: 'Retry',
+                options: FFButtonOptions(
+                  width: 200.0,
+                  height: 50.0,
+                  padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
+                  iconPadding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
+                  color: FlutterFlowTheme.of(context).primary,
+                  textStyle: FlutterFlowTheme.of(context).titleSmall.override(
+                    fontFamily: 'custom font',
+                    color: Colors.white,
+                  ),
+                  elevation: 2.0,
+                  borderSide: BorderSide(
+                    color: Colors.transparent,
+                    width: 1.0,
+                  ),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+              ),
+              SizedBox(height: 16.0),
+              TextButton(
+                onPressed: () async {
+                  GoRouter.of(context).prepareAuthEvent();
+                  await authManager.signOut();
+                  GoRouter.of(context).clearRedirectLocation();
+                  context.goNamedAuth(OnBoardingWidget.routeName, context.mounted);
+                },
+                child: Text(
+                  'Sign Out',
+                  style: FlutterFlowTheme.of(context).bodyMedium.override(
+                    fontFamily: 'custom font',
+                    color: FlutterFlowTheme.of(context).secondaryText,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDashboardWithEmptyData(BuildContext context) {
+    // Create a default empty PetInfoRecord for anonymous users
+    final emptyPetInfo = PetInfoRecord.getDocumentFromData(
+      createPetInfoRecordData(
+        uid: currentUserUid,
+        displayName: 'Guest User',
+        petName: 'Your Pet',
+        petAge: 0,
+        petGender: '',
+        petHeartRate: 0,
+        petVOCPercent: 0.0,
+        petSpeed: 0.0,
+        petIsHealthy: true,
+        createdTime: getCurrentTimestamp,
+      ),
+      currentUserReference!,
+    );
+
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: Scaffold(
+        key: scaffoldKey,
+        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        endDrawer: _buildDrawer(context),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Show banner for anonymous users
+              if (FirebaseAuth.instance.currentUser?.isAnonymous ?? false) _buildAnonymousBanner(context),
+              _buildHeader(context, emptyPetInfo),
+              Expanded(
+                child: _buildDashboardContent(context, emptyPetInfo),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
